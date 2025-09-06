@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>生日快乐歌</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FF5E7D',
+                        secondary: '#FFD166',
+                        accent: '#06D6A0'
+                    },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s infinite',
+                        'bounce-slow': 'bounce 2s infinite',
+                        'scale': 'scale 1.5s infinite alternate'
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-15px)' }
+                        },
+                        scale: {
+                            '0%': { transform: 'scale(1)' },
+                            '100%': { transform: 'scale(1.1)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            }
+            .full-screen {
+                min-height: 100vh;
+            }
+            .click-indicator {
+                animation: click-indicator 1.5s infinite;
+            }
+            @keyframes click-indicator {
+                0% {
+                    transform: scale(1);
+                    opacity: 0.8;
+                }
+                50% {
+                    transform: scale(1.2);
+                    opacity: 0.4;
+                }
+                100% {
+                    transform: scale(1.5);
+                    opacity: 0;
+                }
+            }
+            .confetti {
+                position: absolute;
+                width: 10px;
+                height: 10px;
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-pink-50 to-purple-100 overflow-hidden">
+    <!-- 背景装饰元素 -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div class="absolute top-10 left-5 w-16 h-24 bg-primary/30 rounded-full animate-float" style="animation-delay: 0s;"></div>
+        <div class="absolute top-40 right-10 w-12 h-18 bg-secondary/30 rounded-full animate-float" style="animation-delay: 0.5s;"></div>
+        <div class="absolute bottom-20 left-10 w-14 h-20 bg-accent/30 rounded-full animate-float" style="animation-delay: 1s;"></div>
+        <div class="absolute bottom-40 right-5 w-10 h-16 bg-primary/20 rounded-full animate-float" style="animation-delay: 1.5s;"></div>
+    </div>
+
+    <!-- 主容器 - 整个屏幕可点击 -->
+    <div id="play-area" class="full-screen flex flex-col items-center justify-center relative z-10 p-6 cursor-pointer">
+        <!-- 点击提示 (播放前显示) -->
+        <div id="tap-indicator" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="w-20 h-20 rounded-full border-2 border-primary/50 flex items-center justify-center">
+                <div class="w-16 h-16 rounded-full border-2 border-primary/70 flex items-center justify-center">
+                    <div class="w-12 h-12 rounded-full bg-primary/20 click-indicator"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 标题 -->
+        <h1 class="text-[clamp(2rem,8vw,3.5rem)] font-bold text-primary text-center text-shadow mb-6 animate-float">
+            生日快乐！
+        </h1>
+        
+        <!-- 蛋糕图标 -->
+        <div class="w-32 h-32 md:w-40 md:h-40 mb-8 relative animate-scale">
+            <i class="fa-solid fa-cake-candles text-secondary text-6xl md:text-7xl absolute inset-0 flex items-center justify-center"></i>
+            <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-3 h-6 bg-yellow-300 rounded-full"></div>
+            <div class="absolute top-[-10px] left-1/2 transform -translate-x-1/2 w-4 h-4 bg-orange-400 rounded-full shadow-lg shadow-orange-400/50"></div>
+        </div>
+        
+        <!-- 提示文字 -->
+        <p id="tap-text" class="text-gray-600 text-center text-[clamp(1rem,4vw,1.25rem)]">
+            点击屏幕播放生日快乐歌
+        </p>
+        
+        <!-- 播放状态指示 (播放时显示) -->
+        <div id="playing-indicator" class="hidden mt-8 flex items-center space-x-3">
+            <div class="w-2 h-8 bg-primary rounded-full animate-pulse"></div>
+            <div class="w-2 h-12 bg-primary rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+            <div class="w-2 h-6 bg-primary rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+            <div class="w-2 h-10 bg-primary rounded-full animate-pulse" style="animation-delay: 0.6s"></div>
+        </div>
+    </div>
+    
+    <!-- 重播按钮 (播放时显示) -->
+    <button id="replay-btn" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-white/80 backdrop-blur-sm text-primary w-14 h-14 rounded-full shadow-lg flex items-center justify-center hidden z-20">
+        <i class="fa-solid fa-refresh"></i>
+    </button>
+    
+    <!-- 音频元素 -->
+    <audio id="birthday-audio" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3" type="audio/mpeg">
+    </audio>
+    
+    <!-- 礼花容器 -->
+    <div id="confetti-container" class="fixed inset-0 pointer-events-none z-30"></div>
+
+    <script>
+        // DOM元素
+        const playArea = document.getElementById('play-area');
+        const tapIndicator = document.getElementById('tap-indicator');
+        const tapText = document.getElementById('tap-text');
+        const playingIndicator = document.getElementById('playing-indicator');
+        const replayBtn = document.getElementById('replay-btn');
+        const audio = document.getElementById('birthday-audio');
+        const confettiContainer = document.getElementById('confetti-container');
+        
+        // 状态变量
+        let isPlaying = false;
+        
+        // 初始化函数
+        function init() {
+            // 为整个播放区域添加点击事件
+            playArea.addEventListener('click', togglePlay);
+            
+            // 为重播按钮添加点击事件
+            replayBtn.addEventListener('click', () => {
+                audio.currentTime = 0;
+                if (!isPlaying) {
+                    playAudio();
+                }
+            });
+        }
+        
+        // 播放/暂停切换
+        function togglePlay() {
+            if (isPlaying) {
+                pauseAudio();
+            } else {
+                playAudio();
+            }
+        }
+        
+        // 播放音频
+        function playAudio() {
+            // 尝试播放音频
+            audio.play().then(() => {
+                isPlaying = true;
+                updateUI();
+                createConfetti(); // 播放时显示礼花效果
+            }).catch(error => {
+                console.error('播放失败:', error);
+                // 某些浏览器需要更明确的用户交互，再次尝试
+                setTimeout(() => {
+                    audio.play().then(() => {
+                        isPlaying = true;
+                        updateUI();
+                        createConfetti();
+                    });
+                }, 100);
+            });
+        }
+        
+        // 暂停音频
+        function pauseAudio() {
+            audio.pause();
+            isPlaying = false;
+            updateUI();
+        }
+        
+        // 更新UI显示
+        function updateUI() {
+            if (isPlaying) {
+                // 播放状态
+                tapIndicator.classList.add('hidden');
+                tapText.textContent = '祝生日快乐，天天开心！';
+                playingIndicator.classList.remove('hidden');
+                replayBtn.classList.remove('hidden');
+            } else {
+                // 暂停状态
+                tapIndicator.classList.remove('hidden');
+                tapText.textContent = '点击屏幕继续播放';
+                playingIndicator.classList.add('hidden');
+                replayBtn.classList.add('hidden');
+            }
+        }
+        
+        // 创建礼花效果
+        function createConfetti() {
+            // 清除现有礼花
+            confettiContainer.innerHTML = '';
+            
+            const colors = ['#FF5E7D', '#FFD166', '#06D6A0', '#118AB2', '#8338EC', '#FB8500'];
+            const count = 100;
+            
+            for (let i = 0; i < count; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                // 随机属性
+                const size = Math.random() * 8 + 4;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const left = Math.random() * 100;
+                const delay = Math.random() * 3;
+                const duration = Math.random() * 3 + 2;
+                const rotation = Math.random() * 360;
+                
+                // 设置样式
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size}px`;
+                confetti.style.backgroundColor = color;
+                confetti.style.left = `${left}%`;
+                confetti.style.top = `-${size}px`;
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                confetti.style.transform = `rotate(${rotation}deg)`;
+                confetti.style.animation = `confetti-fall ${duration}s linear forwards ${delay}s`;
+                
+                // 添加到容器
+                confettiContainer.appendChild(confetti);
+            }
+            
+            // 添加礼花动画
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes confetti-fall {
+                    0% {
+                        transform: translateY(0) rotate(0deg);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateY(100vh) rotate(360deg);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
+    
